@@ -3,20 +3,27 @@ import com.alibaba.dubbo.config.annotation.Service;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.qingcheng.dao.SpecMapper;
+import com.qingcheng.dao.TemplateMapper;
 import com.qingcheng.entity.PageResult;
 import com.qingcheng.pojo.goods.Spec;
+import com.qingcheng.pojo.goods.Template;
 import com.qingcheng.service.goods.SpecService;
+import com.qingcheng.service.goods.TemplateService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import tk.mybatis.mapper.entity.Example;
 
 import java.util.List;
 import java.util.Map;
 
-@Service
+@Service(interfaceClass = SpecService.class)
 public class SpecServiceImpl implements SpecService {
 
     @Autowired
     private SpecMapper specMapper;
+
+    @Autowired
+    private TemplateMapper templateMapper;
 
     /**
      * 返回全部记录
@@ -75,7 +82,11 @@ public class SpecServiceImpl implements SpecService {
      * 新增
      * @param spec
      */
+    @Transactional
     public void add(Spec spec) {
+        Template template = templateMapper.selectByPrimaryKey(spec.getTemplateId());
+        template.setSpecNum(template.getSpecNum() + 1);
+        templateMapper.updateByPrimaryKey(template);
         specMapper.insert(spec);
     }
 
@@ -91,7 +102,14 @@ public class SpecServiceImpl implements SpecService {
      *  删除
      * @param id
      */
+    @Transactional
     public void delete(Integer id) {
+        Spec spec = specMapper.selectByPrimaryKey(id);
+        if (spec != null){
+            Template template = templateMapper.selectByPrimaryKey(spec.getTemplateId());
+            template.setSpecNum(template.getSpecNum() - 1);
+            templateMapper.updateByPrimaryKey(template);
+        }
         specMapper.deleteByPrimaryKey(id);
     }
 
