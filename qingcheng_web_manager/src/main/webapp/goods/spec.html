@@ -54,34 +54,27 @@
             <div class="filter-container">
                 <!--查询表单-->
                 <el-form :inline="true" >
-                          <el-form-item label="名称">
-<el-input v-model="searchMap.name" placeholder="名称" class="filter-item" ></el-input></el-form-item>
-          <el-form-item label="规格选项">
-<el-input v-model="searchMap.options" placeholder="规格选项" class="filter-item" ></el-input></el-form-item>
-          <el-form-item label="排序">
-<el-input v-model="searchMap.seq" placeholder="排序" class="filter-item" ></el-input></el-form-item>
-          <el-form-item label="模板ID">
-<el-input v-model="searchMap.templateId" placeholder="模板ID" class="filter-item" ></el-input></el-form-item>
-
-                <el-button class="dalfBut" @click="fetchData()">查询</el-button>
-                <el-button type="primary"  class="butT" @click="formVisible=true;pojo={}">新增</el-button>
+                    <el-form-item label="名称">
+                        <el-input v-model="searchMap.name" placeholder="名称" class="filter-item" ></el-input>
+                    </el-form-item>
+                    <el-button class="dalfBut" @click="fetchData()">查询</el-button>
+                    <el-button type="primary"  class="butT" @click="formVisible=true;pojo={templateId:searchMap.templateId}">新增</el-button>
+                    <el-button type="primary"  class="butT" @click="goTemplate">模板管理</el-button>
                 </el-form>
             </div>
 
-            <el-table :data="tableData" border style="width: 100%">
-                          <el-table-column prop="id" label="ID" width="80"></el-table-column>
-          <el-table-column prop="name" label="名称" width="80"></el-table-column>
-          <el-table-column prop="options" label="规格选项" width="80"></el-table-column>
-          <el-table-column prop="seq" label="排序" width="80"></el-table-column>
-          <el-table-column prop="templateId" label="模板ID" width="80"></el-table-column>
-
-                    <el-table-column
-                            label="操作"  >
-                        <template slot-scope="scope">
-                            <el-button @click="edit(scope.row.id)" size="mini" type="primary" size="small">修改</el-button>
-                            <el-button @click="dele(scope.row.id)" size="mini" type="danger" size="small">删除</el-button>
-                        </template>
-                    </el-table-column>
+            <el-table :data="tableData" border style="width: 100%" :cell-style="{'text-align':'center'}">
+                <el-table-column prop="id" label="ID" width="80"></el-table-column>
+                <el-table-column prop="name" label="名称" width="180"></el-table-column>
+                <el-table-column prop="options" label="规格选项" width="500"></el-table-column>
+                <el-table-column prop="seq" label="排序" width="180"></el-table-column>
+                <el-table-column prop="templateId" label="模板ID" width="180"></el-table-column>
+                <el-table-column label="操作"  width="180">
+                    <template slot-scope="scope">
+                        <el-button @click="edit(scope.row.id)" type="text" size="small">修 改</el-button>
+                        <el-button @click="dele(scope.row.id)" type="text" size="small">删 除</el-button>
+                    </template>
+                </el-table-column>
             </el-table>
             <div class="pagination-container">
                 <el-pagination
@@ -99,29 +92,13 @@
                 <!--弹出窗口-->
                 <el-dialog  title="编辑" :visible.sync="formVisible" >
                     <el-form label-width="80px">
-                                <el-form-item label="名称"><el-input v-model="pojo.name"></el-input></el-form-item>
-        <el-form-item label="规格选项"><el-input v-model="pojo.options"></el-input></el-form-item>
-        <el-form-item label="排序"><el-input v-model="pojo.seq"></el-input></el-form-item>
-        <el-form-item label="模板ID"><el-input v-model="pojo.templateId"></el-input></el-form-item>
-
-                            <!-- 图片上传代码 如页面有图片上传功能放开注释 ****
-                            <el-form-item label="图片">
-                                <el-upload
-                                        class="avatar-uploader"
-                                        action="/upload/native.do"
-                                        :show-file-list="false"
-                                        :on-success="handleAvatarSuccess"
-                                        :before-upload="beforeAvatarUpload">
-                                    <img v-if="imageUrl" :src="imageUrl" class="avatar">
-                                    <i v-else class="el-icon-plus avatar-uploader-icon"></i>
-                                </el-upload>
-                            </el-form-item>
-                            -->
-
-                            <el-form-item>
-                                <el-button type="primary" @click="save()">保存</el-button>
-                                <el-button @click="formVisible = false" >关闭</el-button>
-                            </el-form-item>
+                        <el-form-item label="名称"><el-input v-model="pojo.name"></el-input></el-form-item>
+                        <el-form-item label="规格选项"><el-input v-model="pojo.options" type="textarea" :autosize="{minRows:4, maxRows:10}"></el-input></el-form-item>
+                        <el-form-item label="排序"><el-input v-model="pojo.seq"></el-input></el-form-item>
+                        <el-form-item>
+                            <el-button type="primary" @click="save()">保存</el-button>
+                            <el-button @click="formVisible = false" >关闭</el-button>
+                        </el-form-item>
                     </el-form>
                 </el-dialog>
             </div>
@@ -135,6 +112,7 @@
 <script src="/js/vue.js"></script>
 <script src="/js/axios.js"></script>
 <script src="/js/elementui.js"></script>
+<script src="/js/util.js"></script>
 <script>
      new Vue({
         el: '#app',
@@ -147,14 +125,16 @@
                 searchMap: {},
                 pojo: {},
                 formVisible: false,
-                imageUrl: ''
+                imageUrl: '',
             }
         },
         created(){
+            this.searchMap={templateId: getQueryString("templateId")};
             this.fetchData();
         },
         methods:{
             fetchData (){
+
                 axios.post(`/spec/findPage.do?page=${this.currentPage}&size=${this.size}`,this.searchMap).then(response => {
                     this.tableData = response.data.rows;
                     this.total = response.data.total;
@@ -162,6 +142,7 @@
             },
             save (){
                 // this.pojo.image= this.imageUrl; //如页面有图片上传功能放开注释
+                this.pojo.options = this.pojo.options.replace(/\n/g,',')
                 axios.post(`/spec/${this.pojo.id==null?'add':'update'}.do`,this.pojo).then(response => {
                     this.fetchData (); //刷新列表
                     this.formVisible = false ;//关闭窗口
@@ -172,6 +153,7 @@
                 // 调用查询
                 axios.get(`/spec/findById.do?id=${id}`).then(response => {
                     this.pojo = response.data;
+                    this.pojo.options = this.pojo.options.replace(/,/g,'\n')
                     // this.imageUrl=this.pojo.image //显示图片  如页面有图片上传功能放开注释
                 })
             },
@@ -186,6 +168,9 @@
                     })
                 })
             },
+            goTemplate(){
+                location.href = "template.html"
+            }
 			/* ****图片上传相关代码  如页面有图片上传功能放开注释 **** 
             handleAvatarSuccess(res, file) {
                 this.imageUrl = file.response;
