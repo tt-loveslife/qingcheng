@@ -92,7 +92,16 @@ public class CategoryServiceImpl implements CategoryService {
      * @param id
      */
     public void delete(Integer id) {
-        categoryMapper.deleteByPrimaryKey(id);
+        Example example = new Example(Category.class);
+        Example.Criteria criteria = example.createCriteria();
+        criteria.andEqualTo("parentId", id);
+        List<Category> categories = categoryMapper.selectByExample(example);
+        if(categories == null || categories.size() == 0){
+            categoryMapper.deleteByPrimaryKey(id);
+        }else{
+            throw new RuntimeException("存在子分类，无法删除");
+        }
+
     }
 
     /**
