@@ -54,43 +54,54 @@
             <div class="filter-container">
                 <!--查询表单-->
                 <el-form :inline="true" >
-                          <el-form-item label="分类名称">
-<el-input v-model="searchMap.name" placeholder="分类名称" class="filter-item" ></el-input></el-form-item>
-          <el-form-item label="商品数量">
-<el-input v-model="searchMap.goodsNum" placeholder="商品数量" class="filter-item" ></el-input></el-form-item>
-          <el-form-item label="是否显示">
-<el-input v-model="searchMap.isShow" placeholder="是否显示" class="filter-item" ></el-input></el-form-item>
-          <el-form-item label="是否导航">
-<el-input v-model="searchMap.isMenu" placeholder="是否导航" class="filter-item" ></el-input></el-form-item>
-          <el-form-item label="排序">
-<el-input v-model="searchMap.seq" placeholder="排序" class="filter-item" ></el-input></el-form-item>
-          <el-form-item label="上级ID">
-<el-input v-model="searchMap.parentId" placeholder="上级ID" class="filter-item" ></el-input></el-form-item>
-          <el-form-item label="模板ID">
-<el-input v-model="searchMap.templateId" placeholder="模板ID" class="filter-item" ></el-input></el-form-item>
-
-                <el-button class="dalfBut" @click="fetchData()">查询</el-button>
-                <el-button type="primary"  class="butT" @click="formVisible=true;pojo={}">新增</el-button>
+                    <el-form-item label="分类名称">
+                      <el-input v-model="searchMap.name" placeholder="分类名称" class="filter-item" ></el-input>
+                    </el-form-item>
+                <el-form-item label="上级ID">
+                    <el-input v-model="searchMap.parentId" placeholder="上级ID" class="filter-item" ></el-input>
+                </el-form-item>
+                <el-form-item label="模板ID">
+                    <el-input v-model="searchMap.templateId" placeholder="模板ID" class="filter-item" ></el-input>
+                </el-form-item>
+                    <el-button type="primary"  class="butT" @click="formVisible=true;pojo={parentId:searchMap.parentId}">新增</el-button>
+                    <el-button type="primary"  class="butT" @click="backParent()">返回上级</el-button>
                 </el-form>
             </div>
 
-            <el-table :data="tableData" border style="width: 100%">
-                          <el-table-column prop="id" label="分类ID" width="80"></el-table-column>
-          <el-table-column prop="name" label="分类名称" width="80"></el-table-column>
-          <el-table-column prop="goodsNum" label="商品数量" width="80"></el-table-column>
-          <el-table-column prop="isShow" label="是否显示" width="80"></el-table-column>
-          <el-table-column prop="isMenu" label="是否导航" width="80"></el-table-column>
-          <el-table-column prop="seq" label="排序" width="80"></el-table-column>
-          <el-table-column prop="parentId" label="上级ID" width="80"></el-table-column>
-          <el-table-column prop="templateId" label="模板ID" width="80"></el-table-column>
-
-                    <el-table-column
-                            label="操作"  >
-                        <template slot-scope="scope">
-                            <el-button @click="edit(scope.row.id)" size="mini" type="primary" size="small">修改</el-button>
-                            <el-button @click="dele(scope.row.id)" size="mini" type="danger" size="small">删除</el-button>
-                        </template>
-                    </el-table-column>
+            <el-table :data="tableData" border style="width: 100%" :cell-style="{'text-align':'center'}">
+                <el-table-column prop="id" label="分类ID" width="120"></el-table-column>
+                <el-table-column prop="name" label="分类名称" width="200"></el-table-column>
+                <el-table-column prop="goodsNum" label="商品数量" width="120"></el-table-column>
+                <el-table-column label="是否显示" width="120">
+                    <template slot-scope="scope">
+                        <el-switch
+                            v-model="scope.row.isShow"
+                            active-value="1"
+                            inactive-value="0"
+                            disabled="true">
+                        </el-switch>
+                    </template>
+                </el-table-column>
+                <el-table-column label="是否导航" width="120">
+                    <template slot-scope="scope">
+                        <el-switch
+                            v-model="scope.row.isMenu"
+                            active-value="1"
+                            inactive-value="0"
+                            disabled="true">
+                        </el-switch>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="seq" label="排序" width="120"></el-table-column>
+                <el-table-column prop="parentId" label="上级ID" width="120"></el-table-column>
+                <el-table-column prop="templateId" label="模板ID" width="120"></el-table-column>
+                <el-table-column label="操作"  width="200">
+                    <template slot-scope="scope">
+                        <el-button @click="edit(scope.row.id)" type="text" size="small">修 改</el-button>
+                        <el-button @click="dele(scope.row.id)" type="text" size="small">删 除</el-button>
+                        <el-button v-if="parentIds.length < 2" @click="queryByParentId(scope.row.id)" type="text" size="small">查看下级</el-button>
+                    </template>
+                </el-table-column>
             </el-table>
             <div class="pagination-container">
                 <el-pagination
@@ -108,32 +119,35 @@
                 <!--弹出窗口-->
                 <el-dialog  title="编辑" :visible.sync="formVisible" >
                     <el-form label-width="80px">
-                                <el-form-item label="分类名称"><el-input v-model="pojo.name"></el-input></el-form-item>
-        <el-form-item label="商品数量"><el-input v-model="pojo.goodsNum"></el-input></el-form-item>
-        <el-form-item label="是否显示"><el-input v-model="pojo.isShow"></el-input></el-form-item>
-        <el-form-item label="是否导航"><el-input v-model="pojo.isMenu"></el-input></el-form-item>
-        <el-form-item label="排序"><el-input v-model="pojo.seq"></el-input></el-form-item>
-        <el-form-item label="上级ID"><el-input v-model="pojo.parentId"></el-input></el-form-item>
-        <el-form-item label="模板ID"><el-input v-model="pojo.templateId"></el-input></el-form-item>
-
-                            <!-- 图片上传代码 如页面有图片上传功能放开注释 ****
-                            <el-form-item label="图片">
-                                <el-upload
-                                        class="avatar-uploader"
-                                        action="/upload/native.do"
-                                        :show-file-list="false"
-                                        :on-success="handleAvatarSuccess"
-                                        :before-upload="beforeAvatarUpload">
-                                    <img v-if="imageUrl" :src="imageUrl" class="avatar">
-                                    <i v-else class="el-icon-plus avatar-uploader-icon"></i>
-                                </el-upload>
-                            </el-form-item>
-                            -->
-
-                            <el-form-item>
-                                <el-button type="primary" @click="save()">保存</el-button>
-                                <el-button @click="formVisible = false" >关闭</el-button>
-                            </el-form-item>
+                        <el-form-item label="分类名称"><el-input v-model="pojo.name"></el-input></el-form-item>
+                        <el-form-item label="是否显示">
+                            <el-switch
+                                    v-model="pojo.isShow"
+                                    active-value="1"
+                                    inactive-value="0">
+                            </el-switch>
+                        </el-form-item>
+                        <el-form-item label="是否导航">
+                            <el-switch
+                                    v-model="pojo.isMenu"
+                                    active-value="1"
+                                    inactive-value="0">
+                            </el-switch>
+                        </el-form-item>
+                        <el-form-item label="排序"><el-input v-model="pojo.seq"></el-input></el-form-item>
+                        <el-form-item label="模板ID"> <el-select v-model="pojo.templateId" filterable placeholder="请选择">
+                            <el-option
+                            v-for="item in templateList"
+                            :key="item.id"
+                            :label="item.name"
+                            :value="item.id">
+                            </el-option>
+                        </el-select>
+                        </el-form-item>
+                        <el-form-item>
+                            <el-button type="primary" @click="save()">保 存</el-button>
+                            <el-button @click="formVisible = false" >关 闭</el-button>
+                        </el-form-item>
                     </el-form>
                 </el-dialog>
             </div>
@@ -159,16 +173,24 @@
                 searchMap: {},
                 pojo: {},
                 formVisible: false,
-                imageUrl: ''
+                imageUrl: '',
+                parentIds: [],
+                templateList:[]
             }
         },
         created(){
+            this.searchMap = {'parentId':0};
             this.fetchData();
+            axios.get("/template/findAll.do").then(response => {
+                this.templateList = response.data;
+                console.log(this.templateList)
+            })
         },
         methods:{
             fetchData (){
                 axios.post(`/category/findPage.do?page=${this.currentPage}&size=${this.size}`,this.searchMap).then(response => {
                     this.tableData = response.data.rows;
+                    console.log(this.tableData)
                     this.total = response.data.total;
                 });
             },
@@ -184,7 +206,6 @@
                 // 调用查询
                 axios.get(`/category/findById.do?id=${id}`).then(response => {
                     this.pojo = response.data;
-                    // this.imageUrl=this.pojo.image //显示图片  如页面有图片上传功能放开注释
                 })
             },
             dele (id){
@@ -198,22 +219,19 @@
                     })
                 })
             },
-			/* ****图片上传相关代码  如页面有图片上传功能放开注释 **** 
-            handleAvatarSuccess(res, file) {
-                this.imageUrl = file.response;
+            backParent(){
+                const count = this.parentIds.length;
+                if(count > 0){
+                    this.searchMap.parentId= this.parentIds[count - 1]
+                    this.parentIds.splice(count - 1, 1)
+                    this.fetchData();
+                }
             },
-            beforeAvatarUpload(file) {
-                const isJPG = file.type === 'image/jpeg';
-                const isLt2M = file.size / 1024 / 1024 < 2;
-
-                if (!isJPG) {
-                    this.$message.error('上传头像图片只能是 JPG 格式!');
-                }
-                if (!isLt2M) {
-                    this.$message.error('上传头像图片大小不能超过 2MB!');
-                }
-                return isJPG && isLt2M;
-            }*/
+            queryByParentId(id){
+                this.parentIds.push(this.searchMap.parentId);
+                this.searchMap = {'parentId':id};
+                this.fetchData();
+            }
         }
     })
 </script>

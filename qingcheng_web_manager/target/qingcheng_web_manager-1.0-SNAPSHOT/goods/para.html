@@ -57,9 +57,6 @@
                     <el-form-item label="参数名称">
                         <el-input v-model="searchMap.name" placeholder="参数名称" class="filter-item" ></el-input>
                     </el-form-item>
-                    <el-form-item label="模板ID">
-                        <el-input v-model="searchMap.templateId" placeholder="模板ID" class="filter-item" ></el-input>
-                    </el-form-item>
                     <el-button class="dalfBut" @click="fetchData()">查询</el-button>
                     <el-button type="primary"  class="butT" @click="formVisible=true;pojo={templateId:searchMap.templateId}">新增</el-button>
                     <el-button type="primary"  class="butT" @click="goTemplate">模板管理</el-button>
