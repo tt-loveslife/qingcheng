@@ -78,7 +78,7 @@
                             v-model="scope.row.isShow"
                             active-value="1"
                             inactive-value="0"
-                            disabled="true">
+                            disabled=true>
                         </el-switch>
                     </template>
                 </el-table-column>
@@ -88,7 +88,7 @@
                             v-model="scope.row.isMenu"
                             active-value="1"
                             inactive-value="0"
-                            disabled="true">
+                            disabled=true>
                         </el-switch>
                     </template>
                 </el-table-column>
@@ -215,7 +215,12 @@
                     type: 'warning'
                 }).then( () => {
                     axios.get(`/category/delete.do?id=${id}`).then(response => {
-                        this.fetchData (); //刷新列表
+                        if (response.data.code == 0){
+                            this.fetchData (); //刷新列表
+                        }else{
+                            this.$alert(response.data.message, "提示")
+                        }
+
                     })
                 })
             },
