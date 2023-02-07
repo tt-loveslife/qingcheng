@@ -54,36 +54,8 @@
             <div class="filter-container">
                 <!--查询表单-->
                 <el-form :inline="true" >
-                          <el-form-item label="1级分类">
-<el-input v-model="searchMap.categoryId1" placeholder="1级分类" class="filter-item" ></el-input></el-form-item>
-          <el-form-item label="2级分类">
-<el-input v-model="searchMap.categoryId2" placeholder="2级分类" class="filter-item" ></el-input></el-form-item>
-          <el-form-item label="3级分类">
-<el-input v-model="searchMap.categoryId3" placeholder="3级分类" class="filter-item" ></el-input></el-form-item>
-          <el-form-item label="SPU_ID">
-<el-input v-model="searchMap.spuId" placeholder="SPU_ID" class="filter-item" ></el-input></el-form-item>
-          <el-form-item label="SKU_ID">
-<el-input v-model="searchMap.skuId" placeholder="SKU_ID" class="filter-item" ></el-input></el-form-item>
           <el-form-item label="订单ID">
 <el-input v-model="searchMap.orderId" placeholder="订单ID" class="filter-item" ></el-input></el-form-item>
-          <el-form-item label="商品名称">
-<el-input v-model="searchMap.name" placeholder="商品名称" class="filter-item" ></el-input></el-form-item>
-          <el-form-item label="单价">
-<el-input v-model="searchMap.price" placeholder="单价" class="filter-item" ></el-input></el-form-item>
-          <el-form-item label="数量">
-<el-input v-model="searchMap.num" placeholder="数量" class="filter-item" ></el-input></el-form-item>
-          <el-form-item label="总金额">
-<el-input v-model="searchMap.money" placeholder="总金额" class="filter-item" ></el-input></el-form-item>
-          <el-form-item label="实付金额">
-<el-input v-model="searchMap.payMoney" placeholder="实付金额" class="filter-item" ></el-input></el-form-item>
-          <el-form-item label="图片地址">
-<el-input v-model="searchMap.image" placeholder="图片地址" class="filter-item" ></el-input></el-form-item>
-          <el-form-item label="重量">
-<el-input v-model="searchMap.weight" placeholder="重量" class="filter-item" ></el-input></el-form-item>
-          <el-form-item label="运费">
-<el-input v-model="searchMap.postFee" placeholder="运费" class="filter-item" ></el-input></el-form-item>
-          <el-form-item label="是否退货">
-<el-input v-model="searchMap.isReturn" placeholder="是否退货" class="filter-item" ></el-input></el-form-item>
 
                 <el-button class="dalfBut" @click="fetchData()">查询</el-button>
                 <el-button type="primary"  class="butT" @click="formVisible=true;pojo={}">新增</el-button>
@@ -103,16 +75,20 @@
           <el-table-column prop="num" label="数量" width="80"></el-table-column>
           <el-table-column prop="money" label="总金额" width="80"></el-table-column>
           <el-table-column prop="payMoney" label="实付金额" width="80"></el-table-column>
-          <el-table-column prop="image" label="图片地址" width="80"></el-table-column>
+          <el-table-column label="图片地址" width="150">
+              <template slot-scope="scope">
+                  <img :src="scope.row.image" width="120" height="90">
+              </template>
+          </el-table-column>
           <el-table-column prop="weight" label="重量" width="80"></el-table-column>
           <el-table-column prop="postFee" label="运费" width="80"></el-table-column>
           <el-table-column prop="isReturn" label="是否退货" width="80"></el-table-column>
 
                     <el-table-column
-                            label="操作"  >
+                            label="操作"  width="100">
                         <template slot-scope="scope">
-                            <el-button @click="edit(scope.row.id)" size="mini" type="primary" size="small">修改</el-button>
-                            <el-button @click="dele(scope.row.id)" size="mini" type="danger" size="small">删除</el-button>
+                            <el-button @click="edit(scope.row.id)" type="text" size="small">修改</el-button>
+                            <el-button @click="dele(scope.row.id)" type="text" size="small">删除</el-button>
                         </template>
                     </el-table-column>
             </el-table>
@@ -179,6 +155,7 @@
 <script src="/js/vue.js"></script>
 <script src="/js/axios.js"></script>
 <script src="/js/elementui.js"></script>
+<script src="/js/util.js"></script>
 <script>
      new Vue({
         el: '#app',
@@ -195,6 +172,7 @@
             }
         },
         created(){
+            this.searchMap = {"orderId":getQueryString("orderId")};
             this.fetchData();
         },
         methods:{

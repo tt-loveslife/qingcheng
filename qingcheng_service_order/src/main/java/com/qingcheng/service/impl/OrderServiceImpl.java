@@ -2,21 +2,33 @@ package com.qingcheng.service.impl;
 import com.alibaba.dubbo.config.annotation.Service;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
+import com.qingcheng.dao.OrderLogMapper;
 import com.qingcheng.dao.OrderMapper;
 import com.qingcheng.entity.PageResult;
 import com.qingcheng.pojo.order.Order;
+import com.qingcheng.pojo.order.OrderLog;
 import com.qingcheng.service.order.OrderService;
+import com.qingcheng.util.IdWorker;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import tk.mybatis.mapper.entity.Example;
 
+import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-@Service
+@Service(interfaceClass = OrderService.class)
 public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private OrderMapper orderMapper;
+
+    @Autowired
+    private OrderLogMapper orderLogMapper;
+
+    @Autowired
+    private IdWorker idWorker;
 
     /**
      * 返回全部记录
@@ -93,6 +105,32 @@ public class OrderServiceImpl implements OrderService {
      */
     public void delete(String id) {
         orderMapper.deleteByPrimaryKey(id);
+    }
+
+    @Transactional
+    public void batchSend(List<Order> orderList) {
+        for(Order order:orderList){
+            if(order.getShippingCode() == null || "".equals(order.getShippingCode()) || order.getShippingName() == null){
+                throw new RuntimeException("物流公司或者单号有问题");
+            }
+        }
+
+        for(Order order:orderList){
+            order.setOrderStatus("3");//订单状态 已发货
+            order.setConsignStatus("2"); //发货状态 已发货
+            order.setConsignTime(new Date());//发货时间
+            orderMapper.updateByPrimaryKeySelective(order);
+
+            OrderLog orderLog = new OrderLog();
+            orderLog.setId(idWorker.nextId() + "");
+            orderLog.setOperateTime(new Date());
+            orderLog.setOrderId(order.getId());
+            orderLog.setOrderStatus("3");
+            orderLog.setConsignStatus("2");
+            orderLog.setPayStatus(order.getPayStatus());
+            orderLogMapper.updateByPrimaryKeySelective(orderLog);
+
+        }
     }
 
     /**
@@ -188,6 +226,10 @@ public class OrderServiceImpl implements OrderService {
             // 实付金额
             if(searchMap.get("payMoney")!=null ){
                 criteria.andEqualTo("payMoney",searchMap.get("payMoney"));
+            }
+            // 批量查询
+            if(searchMap.get("ids")!=null ){
+                criteria.andIn("id", Arrays.asList(((String)searchMap.get("ids")).split(",")));
             }
 
         }

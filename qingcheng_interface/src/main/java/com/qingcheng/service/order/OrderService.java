@@ -32,4 +32,6 @@ public interface OrderService {
 
     public void delete(String id);
 
+    public void batchSend(List<Order> orderList);
+
 }

@@ -54,6 +54,12 @@ public class OrderController {
         return new Result();
     }
 
+    @PostMapping("/batchSend")
+    public Result batchSend(@RequestBody List<Order> orderList){
+        orderService.batchSend(orderList);
+        return new Result();
+    }
+
     @GetMapping("/delete")
     public Result delete(String id){
         orderService.delete(id);
