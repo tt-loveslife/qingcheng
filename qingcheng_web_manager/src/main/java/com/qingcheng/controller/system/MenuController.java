@@ -21,6 +21,11 @@ public class MenuController {
         return menuService.findAll();
     }
 
+    @GetMapping("/findMenuList")
+    public List<Map> findMenuList(String id){
+        return menuService.findMenuList(id);
+    }
+
     @GetMapping("/findPage")
     public PageResult<Menu> findPage(int page, int size){
         return menuService.findPage(page, size);

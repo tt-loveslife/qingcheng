@@ -9,6 +9,9 @@ import com.qingcheng.service.system.MenuService;
 import org.springframework.beans.factory.annotation.Autowired;
 import tk.mybatis.mapper.entity.Example;
 
+import javax.management.ObjectName;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -24,6 +27,29 @@ public class MenuServiceImpl implements MenuService {
      */
     public List<Menu> findAll() {
         return menuMapper.selectAll();
+    }
+
+    public List<Map> findMenuList(String id){
+        Map<String, Object> searchMap = new HashMap<String, Object>();
+        searchMap.put("parentId", id);
+        List<Menu> menuList = findList(searchMap);
+        if (menuList == null || menuList.size() == 0){
+            return null;
+        }
+        List<Map> ans = new ArrayList<Map>();
+        for (Menu menu:menuList){
+            Map<String, Object> map = new HashMap<String, Object>();
+            map.put("path", menu.getId());
+            map.put("title", menu.getName());
+            map.put("icon", menu.getIcon());
+            map.put("linkUrl", menu.getUrl());
+            List<Map> children = findMenuList(menu.getId());
+            if (children != null && children.size() > 0){
+                map.put("children", findMenuList(menu.getId()));
+            }
+            ans.add(map);
+        }
+        return ans;
     }
 
     /**
@@ -106,11 +132,11 @@ public class MenuServiceImpl implements MenuService {
         if(searchMap!=null){
             // 菜单ID
             if(searchMap.get("id")!=null && !"".equals(searchMap.get("id"))){
-                criteria.andLike("id","%"+searchMap.get("id")+"%");
+                criteria.andEqualTo("id",searchMap.get("id"));
             }
             // 菜单名称
             if(searchMap.get("name")!=null && !"".equals(searchMap.get("name"))){
-                criteria.andLike("name","%"+searchMap.get("name")+"%");
+                criteria.andEqualTo("name",searchMap.get("name"));
             }
             // 图标
             if(searchMap.get("icon")!=null && !"".equals(searchMap.get("icon"))){
@@ -122,7 +148,7 @@ public class MenuServiceImpl implements MenuService {
             }
             // 上级菜单ID
             if(searchMap.get("parentId")!=null && !"".equals(searchMap.get("parentId"))){
-                criteria.andLike("parentId","%"+searchMap.get("parentId")+"%");
+                criteria.andEqualTo("parentId",searchMap.get("parentId"));
             }
 
 

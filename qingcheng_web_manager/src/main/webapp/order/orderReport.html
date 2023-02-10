@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>订单分析报告</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <link rel="stylesheet" href="../plugins/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="/js/echarts.common.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <div class="block">
+            <el-date-picker
+                    v-model="dateRange"
+                    type="daterange"
+                    range-separator="至"
+                    start-placeholder="开始日期"
+                    end-placeholder="结束日期"
+            @change="fetchData()">
+            </el-date-picker>
+        </div>
+
+        <div id="main" style="width: 600px;height:300px;"></div>
+
+        <div class="report-table">
+            <template>
+                <el-table
+                        :data="tableData"
+                        border
+                        style="width: 100%"
+                        :cell-style="{'text-align':'center'}">
+                    <el-table-column
+                            prop="name"
+                            label="分类名称"
+                            width="180">
+                    </el-table-column>
+                    <el-table-column
+                            prop="num"
+                            label="数量"
+                            width="180">
+                    </el-table-column>
+                    <el-table-column label="数量占比" width="180">
+                        <template slot-scope="scope">
+                            <span>{{(scope.row.num / totalNum * 100).toFixed(2)}} %</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column
+                            prop="money"
+                            label="金额"
+                            width="180">
+                    </el-table-column>
+                    <el-table-column label="金额占比" width="180">
+                        <template slot-scope="scope">
+                            <span>{{(scope.row.money / totalMoney * 100).toFixed(2)}} %</span>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </template>
+        </div>
+
+    </div>
+</body>
+
+<script src="/js/util.js"></script>
+<script src="/js/vue.js"></script>
+<script src="/js/elementui.js"></script>
+<script src="/js/axios.js"></script>
+<script>
+    new Vue({
+        el:'#app',
+        data(){
+            return {
+                tableData:[],
+                totalMoney:0,
+                totalNum:0,
+                dateRange:[],
+            }
+        },
+        created(){
+
+        },
+        methods:{
+            fetchData(){
+                let date1 = this.dateRange[0].Format("yyyy-MM-dd");
+                let date2 = this.dateRange[1].Format("yyyy-MM-dd");
+                let legendData = [];
+                let numArray = [];
+                let moneyArray = [];
+                axios.get(`/orderReport/category1Count.do?date1=${date1}&date2=${date2}`).then(response =>{
+                    this.tableData = response.data;
+                    for(let i = 0; i < this.tableData.length; i++){
+                        this.totalNum += this.tableData[i].num;
+                        this.totalMoney += this.tableData[i].money;
+                        legendData.push(this.tableData[i].name);
+                        numArray.push({name:this.tableData[i].name, value:this.tableData[i].num})
+                        moneyArray.push({name:this.tableData[i].name, value:this.tableData[i].money})
+
+                        let myChart = echarts.init(document.getElementById('main'));
+
+                        // 指定图表的配置项和数据
+                        let option = {
+                            title: {
+                                text: '订单分类统计',
+                                subtext: `${date1}至${date2}`,
+                                left: 'center'
+                            },
+                            tooltip: {
+                                trigger: 'item'
+                            },
+                            legend: {
+                                orient: 'vertical',
+                                left: 'left',
+                                data: legendData
+                            },
+                            series: [
+                                {
+                                    name: '销售数目',
+                                    type: 'pie',
+                                    radius: '35%',
+                                    center: ['40%', '60%'],
+                                    data: numArray,
+                                    emphasis: {
+                                        itemStyle: {
+                                            shadowBlur: 10,
+                                            shadowOffsetX: 0,
+                                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                                        }
+                                    }
+                                },
+                                {
+                                    name: '金额数目',
+                                    type: 'pie',
+                                    radius: '35%',
+                                    center: ['80%', '60%'],
+                                    data: moneyArray,
+                                    emphasis: {
+                                        itemStyle: {
+                                            shadowBlur: 10,
+                                            shadowOffsetX: 0,
+                                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                                        }
+                                    }
+                                }
+
+                            ]
+                        };
+
+                        // 使用刚指定的配置项和数据显示图表。
+                        myChart.setOption(option);
+                    }
+                })
+            }
+        }
+    })
+</script>
+</html>

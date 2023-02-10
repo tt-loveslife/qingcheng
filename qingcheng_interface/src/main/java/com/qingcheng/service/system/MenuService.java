@@ -18,6 +18,8 @@ public interface MenuService {
 
     public List<Menu> findList(Map<String,Object> searchMap);
 
+    public List<Map> findMenuList(String id);
+
 
     public PageResult<Menu> findPage(Map<String,Object> searchMap,int page, int size);
 
