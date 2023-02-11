@@ -32,4 +32,6 @@ public interface AdminService {
 
     public void delete(Integer id);
 
+    public boolean checkPass(String username, String inputPass);
+
 }

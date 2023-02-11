@@ -9,6 +9,7 @@ import com.qingcheng.service.system.AdminService;
 import org.springframework.beans.factory.annotation.Autowired;
 import tk.mybatis.mapper.entity.Example;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -93,6 +94,20 @@ public class AdminServiceImpl implements AdminService {
      */
     public void delete(Integer id) {
         adminMapper.deleteByPrimaryKey(id);
+    }
+
+    public boolean checkPass(String username, String inputPass) {
+        Map<String, Object> searchMap = new HashMap<String, Object>();
+        searchMap.put("username", username);
+        List<Admin> list = findList(searchMap);
+        if (list == null || list.size() == 0){
+            throw new RuntimeException("用户名不存在");
+        }
+
+        if (!list.get(0).getPassword().equals(inputPass)){
+            return false;
+        }
+        return true;
     }
 
     /**
