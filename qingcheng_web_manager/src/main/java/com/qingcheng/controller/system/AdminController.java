@@ -4,7 +4,9 @@ import com.alibaba.dubbo.config.annotation.Reference;
 import com.qingcheng.entity.PageResult;
 import com.qingcheng.entity.Result;
 import com.qingcheng.pojo.system.Admin;
+import com.qingcheng.pojo.system.AdminAndRoles;
 import com.qingcheng.service.system.AdminService;
+import com.qingcheng.util.BCrypt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -37,20 +39,31 @@ public class AdminController {
     }
 
     @GetMapping("/findById")
-    public Admin findById(Integer id){
+    public AdminAndRoles findById(Integer id){
         return adminService.findById(id);
     }
 
 
     @PostMapping("/add")
-    public Result add(@RequestBody Admin admin){
-        adminService.add(admin);
+    public Result add(@RequestBody AdminAndRoles adminAndRoles){
+        String pass = adminAndRoles.getAdmin().getPassword();
+        String gensalt = BCrypt.gensalt();
+        String hashpw = BCrypt.hashpw(pass, gensalt);
+        adminAndRoles.getAdmin().setPassword(hashpw);
+        adminService.add(adminAndRoles);
         return new Result();
     }
 
     @PostMapping("/update")
-    public Result update(@RequestBody Admin admin){
-        adminService.update(admin);
+    public Result update(@RequestBody AdminAndRoles adminAndRoles){
+        if (adminAndRoles != null && adminAndRoles.getAdmin() != null){
+            if (!"".equals(adminAndRoles.getAdmin().getPassword())){
+                String gensalt = BCrypt.gensalt();
+                String hashpw = BCrypt.hashpw(adminAndRoles.getAdmin().getPassword(), gensalt);
+                adminAndRoles.getAdmin().setPassword(hashpw);
+                adminService.update(adminAndRoles);
+            }
+        }
         return new Result();
     }
 

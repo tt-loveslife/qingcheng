@@ -1,6 +1,7 @@
 package com.qingcheng.service.system;
 import com.qingcheng.entity.PageResult;
 import com.qingcheng.pojo.system.Admin;
+import com.qingcheng.pojo.system.AdminAndRoles;
 
 import java.util.*;
 
@@ -22,12 +23,12 @@ public interface AdminService {
     public PageResult<Admin> findPage(Map<String,Object> searchMap,int page, int size);
 
 
-    public Admin findById(Integer id);
+    public AdminAndRoles findById(Integer id);
 
-    public void add(Admin admin);
+    public void add(AdminAndRoles adminAndRoles);
 
 
-    public void update(Admin admin);
+    public void update(AdminAndRoles adminAndRoles);
 
 
     public void delete(Integer id);

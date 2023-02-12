@@ -3,22 +3,29 @@ import com.alibaba.dubbo.config.annotation.Service;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.qingcheng.dao.AdminMapper;
+import com.qingcheng.dao.AdminRoleMapper;
 import com.qingcheng.entity.PageResult;
 import com.qingcheng.pojo.system.Admin;
+import com.qingcheng.pojo.system.AdminAndRoles;
+import com.qingcheng.pojo.system.AdminRole;
 import com.qingcheng.service.system.AdminService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import tk.mybatis.mapper.entity.Example;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Service
+@Service(interfaceClass = AdminService.class)
 public class AdminServiceImpl implements AdminService {
 
     @Autowired
     private AdminMapper adminMapper;
 
+    @Autowired
+    private AdminRoleMapper adminRoleMapper;
     /**
      * 返回全部记录
      * @return
@@ -68,24 +75,61 @@ public class AdminServiceImpl implements AdminService {
      * @param id
      * @return
      */
-    public Admin findById(Integer id) {
-        return adminMapper.selectByPrimaryKey(id);
+    public AdminAndRoles findById(Integer id) {
+        Admin admin = adminMapper.selectByPrimaryKey(id);
+        Example example = new Example(AdminRole.class);
+        Example.Criteria criteria = example.createCriteria();
+        criteria.andEqualTo("adminId", admin.getId());
+        List<AdminRole> adminRoles = adminRoleMapper.selectByExample(example);
+        AdminAndRoles adminAndRoles = new AdminAndRoles();
+        adminAndRoles.setAdmin(admin);
+        List<Integer> roleIds = new ArrayList<Integer>();
+        for(AdminRole adminRole:adminRoles){
+            roleIds.add(adminRole.getRoleId());
+        }
+        adminAndRoles.setRoleIds(roleIds);
+        return adminAndRoles;
     }
 
     /**
      * 新增
      * @param admin
      */
-    public void add(Admin admin) {
+    @Transactional
+    public void add(AdminAndRoles adminAndRoles) {
+        Admin admin = adminAndRoles.getAdmin();
+        adminMapper.updateByPrimaryKeySelective(admin);
+        List<Integer> roleIds = adminAndRoles.getRoleIds();
+        for(Integer roleId:roleIds){
+            AdminRole adminRole = new AdminRole();
+            adminRole.setAdminId(admin.getId());
+            adminRole.setRoleId(roleId);
+            adminRoleMapper.insert(adminRole);
+        }
         adminMapper.insert(admin);
     }
 
     /**
      * 修改
-     * @param admin
+     *
+     * @param adminAndRoles
      */
-    public void update(Admin admin) {
-        adminMapper.updateByPrimaryKeySelective(admin);
+    @Transactional
+    public void update(AdminAndRoles adminAndRoles) {
+        // 先删除中间表的所有数据
+        Integer adminId = adminAndRoles.getAdmin().getId();
+        Example example = new Example(AdminRole.class);
+        Example.Criteria criteria = example.createCriteria();
+        criteria.andEqualTo("adminId", adminId);
+        adminRoleMapper.deleteByExample(example);
+
+        adminMapper.updateByPrimaryKeySelective(adminAndRoles.getAdmin());
+        for (Integer roleId:adminAndRoles.getRoleIds()){
+            AdminRole adminRole = new AdminRole();
+            adminRole.setAdminId(adminId);
+            adminRole.setRoleId(roleId);
+            adminRoleMapper.insert(adminRole);
+        }
     }
 
     /**
