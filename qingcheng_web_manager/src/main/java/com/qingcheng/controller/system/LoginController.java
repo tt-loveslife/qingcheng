@@ -2,6 +2,7 @@ package com.qingcheng.controller.system;
 
 import com.alibaba.dubbo.config.annotation.Reference;
 import com.qingcheng.pojo.system.Admin;
+import com.qingcheng.pojo.system.AdminAndRoles;
 import com.qingcheng.service.system.AdminService;
 import com.qingcheng.util.BCrypt;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -53,7 +54,9 @@ public class LoginController {
             String gensalt = BCrypt.gensalt();
             String hashpw = BCrypt.hashpw(inputPass, gensalt);
             list.get(0).setPassword(hashpw);
-            adminService.update(list.get(0));
+            AdminAndRoles adminAndRoles = new AdminAndRoles();
+            adminAndRoles.setAdmin(list.get(0));
+            adminService.update(adminAndRoles);
         }catch (Exception e){
             return false;
         }

@@ -50,7 +50,11 @@ public class AdminController {
         String gensalt = BCrypt.gensalt();
         String hashpw = BCrypt.hashpw(pass, gensalt);
         adminAndRoles.getAdmin().setPassword(hashpw);
-        adminService.add(adminAndRoles);
+        if (adminAndRoles.getAdmin().getId() != null && !"".equals(adminAndRoles.getAdmin().getId())){
+            adminService.update(adminAndRoles);
+        }else{
+            adminService.add(adminAndRoles);
+        }
         return new Result();
     }
 

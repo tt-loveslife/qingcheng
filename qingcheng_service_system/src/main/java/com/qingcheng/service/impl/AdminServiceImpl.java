@@ -98,15 +98,14 @@ public class AdminServiceImpl implements AdminService {
     @Transactional
     public void add(AdminAndRoles adminAndRoles) {
         Admin admin = adminAndRoles.getAdmin();
-        adminMapper.updateByPrimaryKeySelective(admin);
+        adminMapper.insertSelective(admin);
         List<Integer> roleIds = adminAndRoles.getRoleIds();
         for(Integer roleId:roleIds){
             AdminRole adminRole = new AdminRole();
             adminRole.setAdminId(admin.getId());
             adminRole.setRoleId(roleId);
-            adminRoleMapper.insert(adminRole);
+            adminRoleMapper.insertSelective(adminRole);
         }
-        adminMapper.insert(admin);
     }
 
     /**
