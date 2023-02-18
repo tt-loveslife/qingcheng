@@ -9,6 +9,8 @@ import com.qingcheng.service.goods.CategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import tk.mybatis.mapper.entity.Example;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -104,6 +106,15 @@ public class CategoryServiceImpl implements CategoryService {
 
     }
 
+    public List<Map> findCategoryTree() {
+        Example example = new Example(Category.class);
+        Example.Criteria criteria = example.createCriteria();
+        criteria.andEqualTo("isShow", "1");
+        example.setOrderByClause("seq");
+        List<Category> categories = categoryMapper.selectByExample(example);
+        return findByParentId(categories, 0);
+    }
+
     /**
      * 构建查询条件
      * @param searchMap
@@ -119,7 +130,7 @@ public class CategoryServiceImpl implements CategoryService {
             }
             // 是否显示
             if(searchMap.get("isShow")!=null && !"".equals(searchMap.get("isShow"))){
-                criteria.andLike("isShow","%"+searchMap.get("isShow")+"%");
+                criteria.andEqualTo("isShow",searchMap.get("isShow"));
             }
             // 是否导航
             if(searchMap.get("isMenu")!=null && !"".equals(searchMap.get("isMenu"))){
@@ -149,6 +160,19 @@ public class CategoryServiceImpl implements CategoryService {
 
         }
         return example;
+    }
+
+    private List<Map> findByParentId(List<Category> list, Integer parentId){
+        List<Map> ans = new ArrayList<Map>();
+        for(Category category:list){
+            if (category.getParentId().equals(parentId)){
+                Map<String, Object> map = new HashMap<String, Object>();
+                map.put("name", category.getName());
+                map.put("menus", findByParentId(list,category.getId()));
+                ans.add(map);
+            }
+        }
+        return ans;
     }
 
 }
