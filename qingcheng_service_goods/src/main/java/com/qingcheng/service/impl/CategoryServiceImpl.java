@@ -6,7 +6,10 @@ import com.qingcheng.dao.CategoryMapper;
 import com.qingcheng.entity.PageResult;
 import com.qingcheng.pojo.goods.Category;
 import com.qingcheng.service.goods.CategoryService;
+import com.qingcheng.util.CacheKey;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.transaction.annotation.Transactional;
 import tk.mybatis.mapper.entity.Example;
 
 import java.util.ArrayList;
@@ -14,11 +17,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Service
+@Service(interfaceClass = CategoryService.class)
 public class CategoryServiceImpl implements CategoryService {
 
     @Autowired
     private CategoryMapper categoryMapper;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     /**
      * 返回全部记录
@@ -77,16 +83,20 @@ public class CategoryServiceImpl implements CategoryService {
      * 新增
      * @param category
      */
+    @Transactional
     public void add(Category category) {
         categoryMapper.insert(category);
+        saveCategoryTreeToRedis();
     }
 
     /**
      * 修改
      * @param category
      */
+    @Transactional
     public void update(Category category) {
         categoryMapper.updateByPrimaryKeySelective(category);
+        saveCategoryTreeToRedis();
     }
 
     /**
@@ -100,19 +110,29 @@ public class CategoryServiceImpl implements CategoryService {
         List<Category> categories = categoryMapper.selectByExample(example);
         if(categories == null || categories.size() == 0){
             categoryMapper.deleteByPrimaryKey(id);
+            saveCategoryTreeToRedis();
         }else{
             throw new RuntimeException("存在子分类，无法删除");
         }
 
     }
 
-    public List<Map> findCategoryTree() {
+    public List<Map> findCategoryTree() {;
+        return (List<Map>) redisTemplate.boundValueOps(CacheKey.CATEGORY_TREE).get();
+    }
+
+    public void saveCategoryTreeToRedis() {
         Example example = new Example(Category.class);
         Example.Criteria criteria = example.createCriteria();
         criteria.andEqualTo("isShow", "1");
         example.setOrderByClause("seq");
         List<Category> categories = categoryMapper.selectByExample(example);
-        return findByParentId(categories, 0);
+        List<Map> categoryTree = findByParentId(categories, 0);
+        if (categoryTree != null && categoryTree.size() > 0){
+            redisTemplate.boundValueOps(CacheKey.CATEGORY_TREE).set(categoryTree);
+        }else{
+            redisTemplate.boundValueOps(CacheKey.CATEGORY_TREE).set(null);
+        }
     }
 
     /**

@@ -6,7 +6,9 @@ import com.qingcheng.dao.SkuMapper;
 import com.qingcheng.entity.PageResult;
 import com.qingcheng.pojo.goods.Sku;
 import com.qingcheng.service.goods.SkuService;
+import com.qingcheng.util.CacheKey;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import tk.mybatis.mapper.entity.Example;
 
 import java.util.List;
@@ -14,6 +16,9 @@ import java.util.Map;
 
 @Service
 public class SkuServiceImpl implements SkuService {
+
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     @Autowired
     private SkuMapper skuMapper;
@@ -84,7 +89,11 @@ public class SkuServiceImpl implements SkuService {
      * @param sku
      */
     public void update(Sku sku) {
+        Integer originPrice = skuMapper.selectByPrimaryKey(sku.getId()).getPrice();
         skuMapper.updateByPrimaryKeySelective(sku);
+        if (!originPrice.equals(sku.getPrice())){
+            redisTemplate.boundHashOps(CacheKey.SKU_PRICE).put(sku.getId(), sku.getPrice());
+        }
     }
 
     /**
@@ -93,6 +102,33 @@ public class SkuServiceImpl implements SkuService {
      */
     public void delete(String id) {
         skuMapper.deleteByPrimaryKey(id);
+        deletePriceFromRedisById(id);
+    }
+
+    public void saveAllPriceToRedis() {
+        if (!redisTemplate.hasKey(CacheKey.SKU_PRICE)){
+            System.out.println("加载全部价格");
+            List<Sku> all = findAll();
+            for (Sku sku:all){
+                if ("1".equals(sku.getStatus())){
+                    redisTemplate.boundHashOps(CacheKey.SKU_PRICE).put(sku.getId(), sku.getPrice());
+                }
+            }
+        }else{
+            System.out.println("商品价格已加载");
+        }
+    }
+
+    public Integer findPrice(String id) {
+        return (Integer) redisTemplate.boundHashOps(CacheKey.SKU_PRICE).get(id);
+    }
+
+    public void savePriceById(String id, Integer price) {
+        redisTemplate.boundHashOps(CacheKey.SKU_PRICE).put(id, price);
+    }
+
+    public void deletePriceFromRedisById(String id) {
+        redisTemplate.boundHashOps(CacheKey.SKU_PRICE).delete(id);
     }
 
     /**

@@ -34,4 +34,8 @@ public interface AdService {
 
     public List<Ad> findByPotision(String position);
 
+    public void saveAdToRedisByPosition(String position);
+
+    public void saveAllAdToRedis();
+
 }

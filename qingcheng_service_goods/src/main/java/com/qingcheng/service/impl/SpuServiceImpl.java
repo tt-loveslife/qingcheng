@@ -9,16 +9,14 @@ import com.qingcheng.dao.SkuMapper;
 import com.qingcheng.dao.SpuMapper;
 import com.qingcheng.entity.PageResult;
 import com.qingcheng.pojo.goods.*;
+import com.qingcheng.service.goods.SkuService;
 import com.qingcheng.service.goods.SpuService;
 import com.qingcheng.util.IdWorker;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import tk.mybatis.mapper.entity.Example;
 
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service(interfaceClass = SpuService.class)
 public class SpuServiceImpl implements SpuService {
@@ -37,6 +35,9 @@ public class SpuServiceImpl implements SpuService {
 
     @Autowired
     private IdWorker idWorker;
+
+    @Autowired
+    private SkuService skuService;
 
 
 
@@ -186,8 +187,13 @@ public class SpuServiceImpl implements SpuService {
             categoryBrandMapper.insert(categoryBrand);
         }
 
+        for(Sku sku:skuList){
+            skuService.savePriceById(sku.getId(), sku.getPrice());
+        }
+
     }
 
+    @Transactional
     public void deleteGoods(String id){
         Spu spu = spuMapper.selectByPrimaryKey(id);
         if (spu == null){
@@ -195,6 +201,11 @@ public class SpuServiceImpl implements SpuService {
         }
         spu.setIsDelete("1");
         spuMapper.updateByPrimaryKeySelective(spu);
+        Map<String, Object> searchMap = new HashMap<String, Object>();
+        for (Sku sku : skuService.findList(searchMap)) {
+            skuService.deletePriceFromRedisById(sku.getId());
+        }
+
     }
 
     public void recoverGoods(String id){
