@@ -22,6 +22,14 @@ public class SkuSearchController {
             searchMap = WebUtil.convertCharsetToUTF8(searchMap);
             Map search = skuSearchService.search(searchMap);
             model.addAttribute("result", search);
+
+            // 构建请求url
+            StringBuilder url = new StringBuilder("/search.do?");
+            for (Map.Entry entry:searchMap.entrySet()){
+                url.append("&" + entry.getKey() + "=" + entry.getValue());
+            }
+            model.addAttribute("url", url);
+            model.addAttribute("searchMap", searchMap);
             return "search";
         }catch (Exception e){
             e.printStackTrace();
