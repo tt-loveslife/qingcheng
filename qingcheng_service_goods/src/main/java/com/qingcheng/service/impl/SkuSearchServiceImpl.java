@@ -1,6 +1,7 @@
 package com.qingcheng.service.impl;
 
 import com.alibaba.dubbo.config.annotation.Service;
+import com.qingcheng.dao.SkuMapper;
 import com.qingcheng.service.goods.SkuSearchService;
 import org.apache.lucene.util.QueryBuilder;
 import org.elasticsearch.action.search.SearchRequest;
@@ -31,6 +32,9 @@ public class SkuSearchServiceImpl implements SkuSearchService {
     @Autowired
     private RestHighLevelClient restHighLevelClient;
 
+    @Autowired
+    private SkuMapper skuMapper;
+
     private final String SKU_CATEGORY_AGGR_NAME = "sku_category";
 
     public Map search(Map<String, String> searchMap) {
@@ -49,6 +53,13 @@ public class SkuSearchServiceImpl implements SkuSearchService {
             TermQueryBuilder termQueryBuilder = QueryBuilders.termQuery("categoryName", searchMap.get("category"));
             boolQueryBuilder.filter(termQueryBuilder);
         }
+
+        // 品牌筛选
+        if (searchMap.containsKey("brand")){
+            TermQueryBuilder termQueryBuilder = QueryBuilders.termQuery("brandName", searchMap.get("brand"));
+            boolQueryBuilder.filter(termQueryBuilder);
+        }
+
 
         TermsAggregationBuilder termsAggregationBuilder = AggregationBuilders.terms(SKU_CATEGORY_AGGR_NAME).field("categoryName");
         searchSourceBuilder.query(boolQueryBuilder);
@@ -76,6 +87,17 @@ public class SkuSearchServiceImpl implements SkuSearchService {
                 categoryList.add(bucket.getKeyAsString());
             }
 
+            String brandName = "";
+            if (searchMap.containsKey("brand")){
+                brandName = searchMap.get("brand");
+            }else{
+                if (categoryList != null && categoryList.size() > 0){
+                    brandName = categoryList.get(0);
+                }
+            }
+
+            List<Map> brandList = skuMapper.findListByCategoryName(brandName);
+            resultMap.put("brandList", brandList);
             resultMap.put("rows", resultList);
             resultMap.put("total", totalHitsCount);
             resultMap.put("categoryList", categoryList);

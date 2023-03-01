@@ -1,8 +1,16 @@
 package com.qingcheng.dao;
 
 import com.qingcheng.pojo.goods.Sku;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 import tk.mybatis.mapper.common.Mapper;
 
-public interface SkuMapper extends Mapper<Sku> {
+import java.util.List;
+import java.util.Map;
 
+public interface SkuMapper extends Mapper<Sku> {
+    @Select("SELECT NAME, image FROM tb_brand WHERE id IN " +
+            "(SELECT brand_id FROM tb_category_brand WHERE category_id IN " +
+            "(SELECT id FROM tb_category WHERE NAME = #{name})) order by seq")
+    public List<Map> findListByCategoryName(@Param("name") String categoryName);
 }
