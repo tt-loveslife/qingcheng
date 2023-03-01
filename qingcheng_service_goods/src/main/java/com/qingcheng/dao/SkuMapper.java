@@ -17,4 +17,7 @@ public interface SkuMapper extends Mapper<Sku> {
     @Select("SELECT name, options FROM tb_spec WHERE template_id IN " +
             "(SELECT template_id FROM tb_category WHERE NAME=#{name}) order by seq")
     public List<Map> findSpecByCategoryName(@Param("name") String categoryName);
+
+    @Select("SELECT category_name FROM tb_sku GROUP BY category_name;")
+    public List<String> getAllCategory();
 }

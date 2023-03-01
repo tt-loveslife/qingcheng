@@ -478,12 +478,14 @@
                         <span th:text="|品牌:${searchMap.brand}|"></span>
                         <i><a th:href="${#strings.replace(url, '&brand=' + searchMap.brand, '')}">×</a>></i>
                     </li>
-                    <li class="with-x" th:each="item:${searchMap}" th:if="${#strings.startsWith(item.key, 'spec.'}">
+                    <li class="with-x" th:each="item:${searchMap}" th:if="${#strings.startsWith(item.key, 'spec.')}">
                         <span th:text="|${#strings.substring(item.key, 5)}:${item.value}|"></span>
-                        <i><a th:href="${#strings.replace(url, '&' + ${item.key} + '=' + ${item.value}, '')}">×</a>></i>
+                        <i><a th:href="${#strings.replace(url, '&' + item.key + '=' + item.value, '')}">×</a>></i>
                     </li>
-					<li class="with-x">华为<i>×</i></li>
-					<li class="with-x">OPPO<i>×</i></li>
+                    <li class="with-x" th:if="${#maps.containsKey(searchMap, 'startPrice')}">
+                        <span th:text="|价格:${searchMap.startPrice}-${searchMap.endPrice}|"></span>
+                        <i><a th:href="${#strings.replace(#strings.replace(url, '&startPrice='+ searchMap.startPrice,''), '&endPrice='+ searchMap.endPrice,'')}">×</a>></i>
+                    </li>
 				</ul>				
 			</div>
 			<!--selector-->
@@ -514,63 +516,39 @@
 						<a href="javascript:void(0);">更多</a>
 					</div>
 				</div>
-				<div class="type-wrap" th:each="spec:${result.specList}" th:if="!${#maps.containsKey(searchMap, 'spec.' + ${spec.name})}">
+				<div class="type-wrap" th:each="spec:${result.specList}" th:if="!${#maps.containsKey(searchMap, 'spec.' + spec.name)}">
 					<div class="fl key" th:text="${spec.name}">网络制式</div>
 					<div class="fl value">
 						<ul class="type-list">
 							<li th:each="option:${spec.options}">
-								<a th:text="${option}" th:href="${url}&spec.${spec.name}=${option}">GSM（移动/联通2G）</a>
+								<a th:text="${option}" th:href="${url+'&spec.'+ spec.name+ '=' + option}">GSM（移动/联通2G）</a>
 							</li>
 						</ul>
 					</div>
 					<div class="fl ext"></div>
 				</div>
 
-				<div class="type-wrap">
+				<div class="type-wrap" th:if="!${#maps.containsKey(searchMap, 'startPrice')}">
 					<div class="fl key">价格</div>
 					<div class="fl value">
 						<ul class="type-list">
 							<li>
-								<a>0-500元</a>
+								<a th:href="${url+'&startPrice=0&endPrice=500'}">0-500元</a>
 							</li>
 							<li>
-								<a>500-1000元</a>
+								<a th:href="${url+'&startPrice=500&endPrice=1000'}">500-1000元</a>
 							</li>
 							<li>
-								<a>1000-1500元</a>
+								<a th:href="${url+'&startPrice=1000&endPrice=1500'}">1000-1500元</a>
 							</li>
 							<li>
-								<a>1500-2000元</a>
+								<a th:href="${url+'&startPrice=1500&endPrice=2000'}">1500-2000元</a>
 							</li>
 							<li>
-								<a>2000-3000元 </a>
+								<a th:href="${url+'&startPrice=2000&endPrice=3000'}">2000-3000元 </a>
 							</li>
 							<li>
-								<a>3000元以上</a>
-							</li>
-						</ul>
-					</div>
-					<div class="fl ext">
-					</div>
-				</div>
-				<div class="type-wrap">
-					<div class="fl key">更多筛选项</div>
-					<div class="fl value">
-						<ul class="type-list">
-							<li>
-								<a>特点</a>
-							</li>
-							<li>
-								<a>系统</a>
-							</li>
-							<li>
-								<a>手机内存 </a>
-							</li>
-							<li>
-								<a>单卡双卡</a>
-							</li>
-							<li>
-								<a>其他</a>
+								<a th:href="${url+'&startPrice=3000&endPrice=*'}">3000元以上</a>
 							</li>
 						</ul>
 					</div>

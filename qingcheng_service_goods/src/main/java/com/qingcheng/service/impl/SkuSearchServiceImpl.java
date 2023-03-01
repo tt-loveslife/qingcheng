@@ -1,17 +1,18 @@
 package com.qingcheng.service.impl;
 
 import com.alibaba.dubbo.config.annotation.Service;
+import com.github.pagehelper.StringUtil;
 import com.qingcheng.dao.SkuMapper;
+import com.qingcheng.pojo.goods.Sku;
 import com.qingcheng.service.goods.SkuSearchService;
+import com.qingcheng.util.CacheKey;
 import org.apache.lucene.util.QueryBuilder;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.MatchQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.common.Strings;
+import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregation;
@@ -21,6 +22,7 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,6 +36,9 @@ public class SkuSearchServiceImpl implements SkuSearchService {
 
     @Autowired
     private SkuMapper skuMapper;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     private final String SKU_CATEGORY_AGGR_NAME = "sku_category";
     private final String SKU_SPEC_MAP_NAME = "name";
@@ -65,12 +70,22 @@ public class SkuSearchServiceImpl implements SkuSearchService {
         // 规格参数筛选
         for (String key:searchMap.keySet()){
             if (key.startsWith("spec.")){
-                TermQueryBuilder termQueryBuilder = QueryBuilders.termQuery(key + ".keyword", searchMap.get(key));
+                TermQueryBuilder termQueryBuilder = QueryBuilders.termQuery(key + ".keyword", Strings.replace(searchMap.get(key), " ", "+"));
                 boolQueryBuilder.filter(termQueryBuilder);
             }
         }
 
+        // 价格筛选
+        if(searchMap.containsKey("startPrice") && !searchMap.get("startPrice").equals("0")){
+            RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery("price").gte(searchMap.get("startPrice") + "00");
+            boolQueryBuilder.must(rangeQueryBuilder);
+        }
+        if(searchMap.containsKey("endPrice") && !searchMap.get("endPrice").equals("*")){
+            RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery("price").lte(searchMap.get("endPrice") + "00");
+            boolQueryBuilder.must(rangeQueryBuilder);
+        }
 
+        // 聚合搜索
         TermsAggregationBuilder termsAggregationBuilder = AggregationBuilders.terms(SKU_CATEGORY_AGGR_NAME).field("categoryName");
         searchSourceBuilder.query(boolQueryBuilder);
         searchSourceBuilder.aggregation(termsAggregationBuilder);
@@ -98,16 +113,16 @@ public class SkuSearchServiceImpl implements SkuSearchService {
             }
 
             String categoryName = "";
-            if (searchMap.containsKey("categoryName")){
-                categoryName = searchMap.get("categoryName");
+            if (searchMap.containsKey("category")){
+                categoryName = searchMap.get("category");
             }else{
                 if (categoryList != null && categoryList.size() > 0){
                     categoryName = categoryList.get(0);
                 }
             }
-            List<Map> brandList = skuMapper.findListByCategoryName(categoryName);
+            List<Map> brandList = getBrandListByCategory(categoryName);
 
-            List<Map> specByCategoryName = skuMapper.findSpecByCategoryName(categoryName);
+            List<Map> specByCategoryName = getSpecListByCategory(categoryName);
             for (Map spec:specByCategoryName){
                 spec.put(SKU_SPEC_MAP_OPTIONS, ((String)spec.get(SKU_SPEC_MAP_OPTIONS)).split(","));
             }
@@ -123,5 +138,31 @@ public class SkuSearchServiceImpl implements SkuSearchService {
         }
 
         return resultMap;
+    }
+
+    public void loadSkuCateToSpec() {
+        if(!redisTemplate.hasKey(CacheKey.CATEGORY_SPEC_MAP)){
+            List<String> categoryList = skuMapper.getAllCategory();
+            for (String category:categoryList){
+                redisTemplate.boundHashOps(CacheKey.CATEGORY_SPEC_MAP).put(category, skuMapper.findSpecByCategoryName(category));
+            }
+        }
+    }
+
+    public void loadSkuCateToBrand() {
+        if(!redisTemplate.hasKey(CacheKey.CATEGORY_BRAND_MAP)){
+            List<String> categoryList = skuMapper.getAllCategory();
+            for (String category:categoryList){
+                redisTemplate.boundHashOps(CacheKey.CATEGORY_BRAND_MAP).put(category, skuMapper.findListByCategoryName(category));
+            }
+        }
+    }
+
+    public List<Map> getBrandListByCategory(String category){
+        return (List<Map>) redisTemplate.boundHashOps(CacheKey.CATEGORY_BRAND_MAP).get(category);
+    }
+
+    public List<Map> getSpecListByCategory(String category){
+        return (List<Map>) redisTemplate.boundHashOps(CacheKey.CATEGORY_SPEC_MAP).get(category);
     }
 }
