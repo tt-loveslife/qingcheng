@@ -36,6 +36,8 @@ public class SkuSearchServiceImpl implements SkuSearchService {
     private SkuMapper skuMapper;
 
     private final String SKU_CATEGORY_AGGR_NAME = "sku_category";
+    private final String SKU_SPEC_MAP_NAME = "name";
+    private final String SKU_SPEC_MAP_OPTIONS = "options";
 
     public Map search(Map<String, String> searchMap) {
         SearchRequest searchRequest = new SearchRequest();
@@ -58,6 +60,14 @@ public class SkuSearchServiceImpl implements SkuSearchService {
         if (searchMap.containsKey("brand")){
             TermQueryBuilder termQueryBuilder = QueryBuilders.termQuery("brandName", searchMap.get("brand"));
             boolQueryBuilder.filter(termQueryBuilder);
+        }
+
+        // 规格参数筛选
+        for (String key:searchMap.keySet()){
+            if (key.startsWith("spec.")){
+                TermQueryBuilder termQueryBuilder = QueryBuilders.termQuery(key + ".keyword", searchMap.get(key));
+                boolQueryBuilder.filter(termQueryBuilder);
+            }
         }
 
 
@@ -87,20 +97,26 @@ public class SkuSearchServiceImpl implements SkuSearchService {
                 categoryList.add(bucket.getKeyAsString());
             }
 
-            String brandName = "";
-            if (searchMap.containsKey("brand")){
-                brandName = searchMap.get("brand");
+            String categoryName = "";
+            if (searchMap.containsKey("categoryName")){
+                categoryName = searchMap.get("categoryName");
             }else{
                 if (categoryList != null && categoryList.size() > 0){
-                    brandName = categoryList.get(0);
+                    categoryName = categoryList.get(0);
                 }
             }
+            List<Map> brandList = skuMapper.findListByCategoryName(categoryName);
 
-            List<Map> brandList = skuMapper.findListByCategoryName(brandName);
+            List<Map> specByCategoryName = skuMapper.findSpecByCategoryName(categoryName);
+            for (Map spec:specByCategoryName){
+                spec.put(SKU_SPEC_MAP_OPTIONS, ((String)spec.get(SKU_SPEC_MAP_OPTIONS)).split(","));
+            }
+
             resultMap.put("brandList", brandList);
             resultMap.put("rows", resultList);
             resultMap.put("total", totalHitsCount);
             resultMap.put("categoryList", categoryList);
+            resultMap.put("specList", specByCategoryName);
 
         }catch (Exception e){
             e.printStackTrace();
