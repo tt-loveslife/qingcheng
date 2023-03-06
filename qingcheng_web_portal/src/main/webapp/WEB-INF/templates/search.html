@@ -557,25 +557,27 @@
 				</div>
 			</div>
 			<!--details-->
-			<div class="details">
 				<div class="sui-navbar">
 					<div class="navbar-inner filter">
 						<ul class="sui-nav">
-							<li class="active">
-								<a href="#">综合</a>
-							</li>
-							<li>
-								<a href="#">销量</a>
-							</li>
-							<li>
-								<a href="#">新品</a>
-							</li>
-							<li>
-								<a href="#">评价</a>
-							</li>
-							<li>
-								<a href="#">价格</a>
-							</li>
+                            <li th:class="${searchMap.sortName==''?'active':''}">
+                                <a th:href="|${#strings.replace(#strings.replace(url, '&sortOrder='+searchMap.sortOrder, ''), '&sortName='+searchMap.sortName, '&sortOrder=ASC&sortName=')}|">综合</a>
+                            </li>
+                            <li th:class="${searchMap.sortName=='saleNum'?'active':''}">
+                                <a th:href="|${#strings.replace(#strings.replace(url, '&sortOrder='+searchMap.sortOrder, ''), '&sortName='+searchMap.sortName, '&sortOrder=ASC&sortName=saleNum')}|">销量</a>
+                            </li>
+                            <li th:class="${searchMap.sortName=='createTime'?'active':''}">
+                                <a th:href="|${#strings.replace(#strings.replace(url, '&sortOrder='+searchMap.sortOrder, ''), '&sortName='+searchMap.sortName, '&sortOrder=ASC&sortName=createTime')}|">新品</a>
+                            </li>
+                            <li th:class="${searchMap.sortName=='commentNum'?'active':''}">
+                                <a th:href="|${#strings.replace(#strings.replace(url, '&sortOrder='+searchMap.sortOrder, ''), '&sortName='+searchMap.sortName, '&sortOrder=ASC&sortName=commentNum')}|">评价</a>
+                            </li>
+                            <li th:class="${(searchMap.sortName=='price' && searchMap.sortOrder=='ASC')?'active':''}">
+                                <a th:href="|${#strings.replace(#strings.replace(url, '&sortOrder='+searchMap.sortOrder, ''), '&sortName='+searchMap.sortName, '&sortOrder=ASC&sortName=price')}|">价格升序</a>
+                            </li>
+                            <li th:class="${(searchMap.sortName=='price' && searchMap.sortOrder=='DESC')?'active':''}">
+                                <a th:href="|${#strings.replace(#strings.replace(url, '&sortOrder='+searchMap.sortOrder, ''), '&sortName='+searchMap.sortName, '&sortOrder=DESC&sortName=price')}|">价格降序</a>
+                            </li>
 						</ul>
 					</div>
 				</div>
@@ -593,7 +595,7 @@
 										</strong>
 								</div>
 								<div class="attr">
-								    <em th:text="${sku.name}"></em>
+								    <em th:utext="${sku.name}"></em>
                                 </div>
 								<div class="commit">
 									<i class="command">已有<span th:text="${sku.commentNum}">2000</span>人评价</i>
@@ -609,30 +611,25 @@
 				<div class="fr page">
 					<div class="sui-pagination pagination-large">
 						<ul>
-							<li class="prev disabled">
-								<a href="#">«上一页</a>
+							<li class="prev" th:if="${pageNo>1}">
+								<a th:href="${#strings.replace(url, '&pageNo=' + pageNo, '&pageNo='+(pageNo-1))}">«上一页</a>
 							</li>
-							<li class="active">
-								<a href="#">1</a>
+                            <li class="prev disabled" th:if="${pageNo<=1}">
+                                <a>«上一页</a>
+                            </li>
+                            <li class="dotted" th:if="${startPage>1}"><span>...</span></li>
+							<li th:class="${pageNo==page?'active':''}" th:each="page:${#numbers.sequence(startPage, endPage)}">
+								<a th:href="${#strings.replace(url, '&pageNo=' + searchMap.pageNo, '&pageNo='+page)}" th:text="${page}">1</a>
 							</li>
-							<li>
-								<a href="#">2</a>
+							<li class="dotted" th:if="${endPage<result.totalPages}"><span>...</span></li>
+							<li class="next" th:if="${pageNo<endPage}">
+								<a th:href="${#strings.replace(url, '&pageNo=' + pageNo, '&pageNo='+(pageNo+1))}">下一页»</a>
 							</li>
-							<li>
-								<a href="#">3</a>
-							</li>
-							<li>
-								<a href="#">4</a>
-							</li>
-							<li>
-								<a href="#">5</a>
-							</li>
-							<li class="dotted"><span>...</span></li>
-							<li class="next">
-								<a href="#">下一页»</a>
-							</li>
+                            <li class="prev disabled" th:if="${pageNo>=endPage}">
+                                <a>下一页»</a>
+                            </li>
 						</ul>
-						<div><span>共10页&nbsp;</span><span>
+						<div><span th:text="${'共' + result.totalPages + '页'}">共10页&nbsp;</span><span>
       到第
       <input type="text" class="page-num">
       页 <button class="page-confirm" onclick="alert(1)">确定</button></span></div>

@@ -20,16 +20,47 @@ public class SkuSearchController {
     public String search(Model model, @RequestParam Map<String, String> searchMap){
         try{
             searchMap = WebUtil.convertCharsetToUTF8(searchMap);
+            if (searchMap.get("sortName") == null){
+                searchMap.put("sortName", "");
+            }
+            if (searchMap.get("sortOrder")== null){
+                searchMap.put("sortOrder", "DESC");
+            }
+            // 分页
+            if (searchMap.get("pageNo") == null){
+                searchMap.put("pageNo", "1");
+            }
             Map search = skuSearchService.search(searchMap);
-            model.addAttribute("result", search);
 
             // 构建请求url
             StringBuilder url = new StringBuilder("/search.do?");
             for (Map.Entry entry:searchMap.entrySet()){
                 url.append("&" + entry.getKey() + "=" + entry.getValue());
             }
+
+            int pageNo = Integer.parseInt(searchMap.get("pageNo"));
+            model.addAttribute("pageNo", pageNo);
+            Long totalPages = (Long) search.get("totalPages");
+            int startPage = 1;
+            int endPage = totalPages.intValue();
+            if (totalPages > 5){
+                startPage = pageNo - 2;
+                if (startPage <= 0){
+                    startPage = 1;
+                }
+                endPage = pageNo + 4;
+                if (endPage > totalPages){
+                    endPage = totalPages.intValue();
+                }
+            }
+
+            model.addAttribute("result", search);
             model.addAttribute("url", url);
             model.addAttribute("searchMap", searchMap);
+            model.addAttribute("startPage", startPage);
+            model.addAttribute("endPage", endPage);
+
+
             return "search";
         }catch (Exception e){
             e.printStackTrace();

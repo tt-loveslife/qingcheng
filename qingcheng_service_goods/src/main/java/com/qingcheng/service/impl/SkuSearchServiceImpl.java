@@ -12,6 +12,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.Strings;
+import org.elasticsearch.common.text.Text;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -21,6 +22,9 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
+import org.elasticsearch.search.fetch.subphase.highlight.HighlightField;
+import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 
@@ -89,6 +93,27 @@ public class SkuSearchServiceImpl implements SkuSearchService {
         TermsAggregationBuilder termsAggregationBuilder = AggregationBuilders.terms(SKU_CATEGORY_AGGR_NAME).field("categoryName");
         searchSourceBuilder.query(boolQueryBuilder);
         searchSourceBuilder.aggregation(termsAggregationBuilder);
+
+        int pageNo = Integer.parseInt(searchMap.get("pageNo"));
+        pageNo = pageNo <= 0?1:pageNo;
+        int pageSize = 30;
+        int from = (pageNo - 1) * pageSize;
+        searchSourceBuilder.from(from);
+        searchSourceBuilder.size(pageSize);
+
+        // 排序
+        String sortName = searchMap.get("sortName");
+        String sortOrder = searchMap.get("sortOrder");
+        if (!"".equals(sortName)){
+            searchSourceBuilder.sort(sortName, SortOrder.valueOf(sortOrder));
+        }
+
+        // 高亮
+        HighlightBuilder highlightBuilder = new HighlightBuilder();
+        highlightBuilder.field("name").preTags("<font style='color:red'>").postTags("</font>");
+        searchSourceBuilder.highlighter(highlightBuilder);
+
+
         searchRequest.source(searchSourceBuilder);
 
         Map resultMap = new HashMap();
@@ -96,11 +121,17 @@ public class SkuSearchServiceImpl implements SkuSearchService {
             SearchResponse searchResponse = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
             SearchHits searchHits = searchResponse.getHits();
             Integer totalHitsCount = (int) searchHits.getTotalHits();
+            // 返回总页数
+            long pageCount = totalHitsCount % pageSize == 0?totalHitsCount / pageSize:totalHitsCount / pageSize + 1;
 
             // 获取Sku列表内容
             List<Map<String, Object>> resultList = new ArrayList<Map<String, Object>>();
             for (SearchHit hit:searchHits.getHits()){
                 Map<String, Object> sourceAsMap = hit.getSourceAsMap();
+                Map<String, HighlightField> highlightFields = hit.getHighlightFields();
+                HighlightField name = highlightFields.get("name");
+                Text[] fragments = name.getFragments();
+                sourceAsMap.put("name", fragments[0].toString());
                 resultList.add(sourceAsMap);
             }
 
@@ -129,8 +160,8 @@ public class SkuSearchServiceImpl implements SkuSearchService {
 
             resultMap.put("brandList", brandList);
             resultMap.put("rows", resultList);
-            resultMap.put("total", totalHitsCount);
             resultMap.put("categoryList", categoryList);
+            resultMap.put("totalPages", pageCount);
             resultMap.put("specList", specByCategoryName);
 
         }catch (Exception e){
